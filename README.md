@@ -40,7 +40,7 @@ The AI-102 exam covers these main areas. Projects in this repo map to specific o
 | Analyze text | Coming soon |
 | Implement language understanding | Coming soon |
 | Create a question answering solution | Coming soon |
-| **Implement Azure OpenAI Service** | **01-basic-chat** |
+| **Implement Azure OpenAI Service** | **01-basic-chat**, **02-chatbot-memory** |
 
 ### Implement knowledge mining and document intelligence (10-15%)
 
@@ -53,7 +53,7 @@ The AI-102 exam covers these main areas. Projects in this repo map to specific o
 
 | Objective | Project(s) |
 |-----------|------------|
-| Use Azure OpenAI Service | **01-basic-chat** |
+| Use Azure OpenAI Service | **01-basic-chat**, **02-chatbot-memory** |
 | Implement Retrieval Augmented Generation | Coming soon |
 
 ---
@@ -70,6 +70,17 @@ Learn the fundamentals of Azure OpenAI chat completions:
 - Response structure and token management
 
 **Certification topics:** Implement Azure OpenAI Service, prompt engineering, chat completions
+
+### [02-chatbot-memory](./02-chatbot-memory/)
+**Chatbot with Conversation Memory**
+
+Build a multi-turn chatbot that maintains conversation context:
+- Conversation history management
+- Token counting with tiktoken
+- Context window limits and trimming
+- Travel Assistant persona implementation
+
+**Certification topics:** Multi-turn conversations, state management, token management, context windows
 
 ---
 
@@ -118,11 +129,17 @@ azure-ai-developer-projects/
 ├── .gitignore                # Git ignore rules
 ├── 01-basic-chat/            # Azure OpenAI chat completions
 │   ├── README.md             # Project setup and concepts
+│   ├── STUDY_GUIDE.md        # Certification Q&A
 │   ├── chat_app.py           # SDK version (commented)
 │   ├── chat_app_rest.py      # REST API version
 │   ├── requirements.txt      # Dependencies
 │   └── .env.example          # Environment template
-├── 02-.../                   # Future projects
+├── 02-chatbot-memory/        # Multi-turn chatbot with memory
+│   ├── README.md             # Project setup and concepts
+│   ├── STUDY_GUIDE.md        # Certification Q&A
+│   ├── chatbot.py            # Travel assistant chatbot
+│   ├── requirements.txt      # Dependencies
+│   └── .env.example          # Environment template
 └── ...
 ```
 
