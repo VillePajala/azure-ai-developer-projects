@@ -37,19 +37,38 @@ Before running this code, you need an Azure OpenAI resource with a deployed mode
 3. Select your Azure OpenAI resource
 4. Go to **Deployments** → **+ Create deployment**
 5. Select a model:
-   - **gpt-4** (recommended for best results)
-   - **gpt-35-turbo** (faster, cheaper)
-6. Give it a **Deployment name** (e.g., "my-gpt4") - **remember this name!**
+   - **gpt-4o-mini** (recommended for learning - cheap and capable)
+   - **gpt-35-turbo** (also cheap, slightly older)
+   - **gpt-4o** (most capable, more expensive)
+6. Give it a **Deployment name** (e.g., "gpt-4o-mini") - **remember this name!**
 7. Set tokens-per-minute rate limit (start with default)
 8. Click **Create**
 
-### Step 3: Get Your Credentials
+### Step 3: Get Your Credentials from Foundry
 
+After deployment, click on your deployment in Foundry to see its details page.
+
+**Look for the Target URI / Endpoint URL** - it looks like this:
+```
+https://your-resource.cognitiveservices.azure.com/openai/deployments/gpt-4o-mini/chat/completions?api-version=2025-01-01-preview
+```
+
+From this URL, extract:
+
+| Value | Where in URL | Example |
+|-------|--------------|---------|
+| **Endpoint** | Base URL (up to `.com/`) | `https://your-resource.cognitiveservices.azure.com/` |
+| **Deployment** | After `/deployments/` | `gpt-4o-mini` |
+| **API Version** | After `?api-version=` | `2025-01-01-preview` |
+
+**Get your API Key:**
 1. In Azure Portal, go to your Azure OpenAI resource
 2. Go to **Keys and Endpoint** (left menu)
-3. Copy:
-   - **Endpoint**: `https://your-resource-name.openai.azure.com/`
-   - **KEY 1** or **KEY 2**: Your API key
+3. Copy **KEY 1** or **KEY 2**
+
+> **Note:** Don't confuse **API version** (e.g., `2025-01-01-preview`) with **Model version** (e.g., `2024-07-18`).
+> - API version = the REST API protocol version (use this in your code)
+> - Model version = when the model was trained (shown in Foundry for reference)
 
 ---
 
@@ -76,13 +95,15 @@ pip install -r requirements.txt
 cp .env.example .env
 ```
 
-Edit `.env` with your values:
+Edit `.env` with your values (from Step 3 above):
 ```
-AZURE_OPENAI_ENDPOINT=https://your-resource-name.openai.azure.com/
+AZURE_OPENAI_ENDPOINT=https://your-resource.cognitiveservices.azure.com/
 AZURE_OPENAI_API_KEY=your-api-key-here
-AZURE_OPENAI_DEPLOYMENT=your-deployment-name
-AZURE_OPENAI_API_VERSION=2024-02-15-preview
+AZURE_OPENAI_DEPLOYMENT=gpt-4o-mini
+AZURE_OPENAI_API_VERSION=2025-01-01-preview
 ```
+
+**Important:** No spaces at the start of lines, no quotes around values.
 
 ### 5. Run the application
 ```bash
@@ -157,9 +178,11 @@ response.usage.total_tokens           # Total (for cost tracking)
 - No quotes around values in `.env`
 
 ### "Resource not found" (404)
-- Verify `AZURE_OPENAI_ENDPOINT` URL is correct
-- Check `AZURE_OPENAI_DEPLOYMENT` matches your deployment name exactly
+- Verify `AZURE_OPENAI_ENDPOINT` is just the base URL (e.g., `https://xxx.cognitiveservices.azure.com/`), not the full path
+- Check `AZURE_OPENAI_DEPLOYMENT` matches your deployment name exactly (case-sensitive)
+- Check `AZURE_OPENAI_API_VERSION` matches the version from the Foundry endpoint URL
 - Ensure the deployment is active in Azure AI Foundry
+- Check `.env` has no leading spaces on any line (common copy-paste issue)
 
 ### "Access denied" (401)
 - Check `AZURE_OPENAI_API_KEY` is correct
