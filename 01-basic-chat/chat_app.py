@@ -1,23 +1,69 @@
 """
 Azure OpenAI Chat Application
 Demonstrates system prompts and parameter tuning for chat completions.
+
+=============================================================================
+AI-102 CERTIFICATION TOPICS COVERED:
+- Implement Azure OpenAI Service solutions
+- Create chat completions using the SDK
+- Configure chat completion parameters (temperature, top_p, max_tokens)
+- Use system messages to guide model behavior (prompt engineering)
+- Understand token usage and billing implications
+=============================================================================
 """
 
 import os
 from dotenv import load_dotenv
 from openai import AzureOpenAI
 
+# =============================================================================
+# CONFIGURATION
+# =============================================================================
+# load_dotenv() reads the .env file and loads variables into os.environ
+# This is a common pattern to keep secrets out of code
+#
+# AI-102 NOTE: In production, use Azure Key Vault or Managed Identity instead
+# of environment variables. API keys should never be committed to source control.
+# =============================================================================
 load_dotenv()
 
+# =============================================================================
+# AZURE OPENAI CLIENT INITIALIZATION
+# =============================================================================
+# The AzureOpenAI client differs from the standard OpenAI client:
+# - Requires azure_endpoint (your resource URL)
+# - Requires api_version (Azure-specific versioning)
+# - Uses deployment names instead of model names
+#
+# AI-102 EXAM TIP: Know the difference between:
+# - Endpoint: https://<resource-name>.openai.azure.com/
+# - Deployment name: What YOU named the model deployment (e.g., "my-gpt4")
+# - Model name: The actual model (e.g., "gpt-4", "gpt-35-turbo")
+# =============================================================================
 client = AzureOpenAI(
     azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
     api_key=os.getenv("AZURE_OPENAI_API_KEY"),
     api_version=os.getenv("AZURE_OPENAI_API_VERSION", "2024-02-15-preview")
 )
 
+# In Azure OpenAI, you call your DEPLOYMENT name, not the model name
+# The deployment is created in Azure AI Foundry or Azure Portal
 DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 
-# System prompts for different personas
+# =============================================================================
+# SYSTEM PROMPTS (PROMPT ENGINEERING)
+# =============================================================================
+# System prompts set the AI's behavior, personality, and constraints.
+#
+# AI-102 EXAM TIP: System prompts are used for:
+# - Setting persona/role ("You are a helpful assistant")
+# - Defining constraints ("Only answer questions about cooking")
+# - Output formatting ("Respond in JSON format")
+# - Safety guidelines ("Never provide medical advice")
+#
+# The system message is processed FIRST and influences all responses.
+# It counts toward your token limit but is powerful for controlling behavior.
+# =============================================================================
 SYSTEM_PROMPTS = {
     "professional": "You are a professional business assistant. Respond formally and concisely, focusing on actionable advice and clear communication.",
     "casual": "You are a friendly, casual helper. Use conversational language, be warm and approachable, and feel free to use informal expressions.",
@@ -34,7 +80,21 @@ TEST_PROMPTS = [
 
 
 def display_response_details(response):
-    """Display the full response structure for learning purposes."""
+    """
+    Display the full response structure for learning purposes.
+
+    AI-102 EXAM TIP: Understand the response object structure:
+    - choices[]: Array of completions (usually 1 unless n>1)
+    - choices[0].message.content: The actual text response
+    - choices[0].finish_reason: Why generation stopped
+        - "stop": Natural completion
+        - "length": Hit max_tokens limit
+        - "content_filter": Blocked by content filtering
+    - usage: Token counts for billing
+        - prompt_tokens: Input tokens (you pay for these)
+        - completion_tokens: Output tokens (you pay for these)
+        - total_tokens: Sum of both
+    """
     print("\n" + "=" * 50)
     print("RESPONSE DETAILS:")
     print("=" * 50)
@@ -42,8 +102,12 @@ def display_response_details(response):
     choice = response.choices[0]
     print(f"\nMessage Content:\n{choice.message.content}")
 
+    # finish_reason tells you WHY the model stopped generating
+    # This is important for detecting truncated responses
     print(f"\nFinish Reason: {choice.finish_reason}")
 
+    # Token usage is critical for cost management
+    # Azure OpenAI bills per 1,000 tokens (varies by model)
     if response.usage:
         print(f"\nToken Usage:")
         print(f"  - Prompt tokens: {response.usage.prompt_tokens}")
@@ -54,7 +118,13 @@ def display_response_details(response):
 
 
 def basic_chat():
-    """Simple chat interaction demonstrating basic API usage."""
+    """
+    Simple chat interaction demonstrating basic API usage.
+
+    AI-102 NOTE: This is the simplest form of chat completion.
+    The messages array contains the conversation history.
+    Each message has a "role" and "content".
+    """
     print("\n--- Basic Chat ---")
     print("Enter your message (or 'back' to return to menu):\n")
 
@@ -65,6 +135,17 @@ def basic_chat():
         if not user_input:
             continue
 
+        # =================================================================
+        # CHAT COMPLETIONS API CALL
+        # =================================================================
+        # model: Your deployment name (NOT the model name like "gpt-4")
+        # messages: Array of message objects with role and content
+        #
+        # Roles:
+        # - "system": Sets behavior (optional but recommended)
+        # - "user": Human input
+        # - "assistant": Previous AI responses (for context)
+        # =================================================================
         response = client.chat.completions.create(
             model=DEPLOYMENT_NAME,
             messages=[
@@ -76,7 +157,14 @@ def basic_chat():
 
 
 def system_prompt_explorer():
-    """Explore how different system prompts affect responses."""
+    """
+    Explore how different system prompts affect responses.
+
+    AI-102 EXAM TIP: System prompts are a key part of prompt engineering.
+    The same user question with different system prompts produces
+    dramatically different responses. This is how you customize AI behavior
+    without fine-tuning the model.
+    """
     print("\n--- System Prompt Explorer ---")
     print("See how different personas shape AI responses.\n")
 
@@ -113,6 +201,8 @@ def system_prompt_explorer():
         if not user_input:
             continue
 
+        # Notice the messages array now includes BOTH system and user messages
+        # The system message comes FIRST and sets the context
         response = client.chat.completions.create(
             model=DEPLOYMENT_NAME,
             messages=[
@@ -125,7 +215,18 @@ def system_prompt_explorer():
 
 
 def parameter_playground():
-    """Experiment with different API parameters."""
+    """
+    Experiment with different API parameters.
+
+    AI-102 EXAM TIP: Know these parameters and when to use them:
+    - temperature: Controls randomness (0-2, default 1)
+    - top_p: Nucleus sampling, alternative to temperature (0-1)
+    - max_tokens: Maximum response length
+    - n: Number of completions to generate
+    - stop: Sequences where generation stops
+    - presence_penalty: Reduces repetition of topics (-2 to 2)
+    - frequency_penalty: Reduces repetition of exact phrases (-2 to 2)
+    """
     print("\n--- Parameter Playground ---")
     print("Experiment with temperature, top_p, and max_tokens.\n")
 
@@ -169,7 +270,23 @@ def parameter_playground():
 
 
 def explore_temperature(prompt):
-    """Compare responses at different temperature settings."""
+    """
+    Compare responses at different temperature settings.
+
+    AI-102 EXAM TIP - TEMPERATURE:
+    - Range: 0.0 to 2.0 (default: 1.0)
+    - Lower = more deterministic, focused, consistent
+    - Higher = more random, creative, varied
+
+    Use cases:
+    - 0.0-0.3: Factual Q&A, code generation, data extraction
+    - 0.5-0.7: Balanced tasks, general conversation
+    - 0.8-1.2: Creative writing, brainstorming
+    - 1.5+: Very creative/experimental (may be incoherent)
+
+    IMPORTANT: Don't use both temperature AND top_p together.
+    Pick one approach for controlling randomness.
+    """
     print(f"\n--- Temperature Exploration ---")
     print(f"Prompt: \"{prompt}\"")
     print("\nTemperature controls randomness/creativity:")
@@ -198,7 +315,23 @@ def explore_temperature(prompt):
 
 
 def explore_top_p(prompt):
-    """Compare responses at different top_p settings."""
+    """
+    Compare responses at different top_p settings.
+
+    AI-102 EXAM TIP - TOP_P (Nucleus Sampling):
+    - Range: 0.0 to 1.0 (default: 1.0)
+    - Controls vocabulary diversity differently than temperature
+    - 0.1 = Only consider top 10% most likely tokens
+    - 0.9 = Consider top 90% of probability mass
+
+    How it works:
+    - Model ranks all possible next tokens by probability
+    - top_p selects from smallest set that sums to p probability
+    - Lower top_p = fewer choices = more predictable
+
+    IMPORTANT: Microsoft recommends changing EITHER temperature OR top_p,
+    not both. They are alternative approaches to the same goal.
+    """
     print(f"\n--- Top_p Exploration ---")
     print(f"Prompt: \"{prompt}\"")
     print("\nTop_p (nucleus sampling) controls vocabulary diversity:")
@@ -217,7 +350,7 @@ def explore_top_p(prompt):
             model=DEPLOYMENT_NAME,
             messages=[{"role": "user", "content": prompt}],
             top_p=top_p,
-            temperature=1.0,  # Keep temperature constant
+            temperature=1.0,  # Keep temperature constant for comparison
             max_tokens=150
         )
 
@@ -228,7 +361,24 @@ def explore_top_p(prompt):
 
 
 def explore_max_tokens(prompt):
-    """Compare responses at different max_tokens settings."""
+    """
+    Compare responses at different max_tokens settings.
+
+    AI-102 EXAM TIP - MAX_TOKENS:
+    - Limits the maximum LENGTH of the response
+    - Does NOT guarantee that length (model may finish earlier)
+    - If response is cut off, finish_reason will be "length"
+
+    Important considerations:
+    - Total tokens = prompt_tokens + completion_tokens
+    - Each model has a context window limit (e.g., 8K, 32K, 128K)
+    - max_tokens must fit within: context_limit - prompt_tokens
+    - Setting max_tokens helps control costs and response time
+
+    Token estimation (rough guide for English):
+    - 1 token ≈ 4 characters or ¾ of a word
+    - 100 tokens ≈ 75 words
+    """
     print(f"\n--- Max Tokens Exploration ---")
     print(f"Prompt: \"{prompt}\"")
     print("\nMax_tokens limits response length:")
@@ -250,6 +400,7 @@ def explore_max_tokens(prompt):
         )
 
         print(f"\nResponse:\n{response.choices[0].message.content}")
+        # Check finish_reason to see if response was truncated
         print(f"\nFinish reason: {response.choices[0].finish_reason}")
         print(f"Completion tokens: {response.usage.completion_tokens} / {max_tok} limit")
 
@@ -263,7 +414,8 @@ def main():
     print("   Exploring Chat Completions")
     print("=" * 50)
 
-    # Verify configuration
+    # Verify configuration before starting
+    # In production, you'd want more robust error handling
     if not all([os.getenv("AZURE_OPENAI_ENDPOINT"),
                 os.getenv("AZURE_OPENAI_API_KEY"),
                 DEPLOYMENT_NAME]):
